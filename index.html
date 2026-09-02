@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kenok Laundrette</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="firebase-config.js"></script>
+</head>
+<body>
+
+  <!-- Login screen -->
+  <div id="loginScreen" class="login-screen">
+    <div class="login-box" id="loginBox">
+      <img src="kenok-logo.jpeg" alt="Kenok Laundrette Logo" class="login-logo">
+      <h2>Kenok Laundrette</h2>
+      <p class="subtitle">Staff Login</p>
+
+      <input type="email" id="loginEmail" placeholder="Email">
+      <input type="password" id="loginPassword" placeholder="Password">
+      <button id="loginBtn">Log In</button>
+      <p id="loginError" class="login-error"></p>
+      <p class="switch-link">New staff? <a href="#" id="showSignup">Sign up here</a></p>
+    </div>
+
+    <div class="login-box" id="signupBox" style="display: none;">
+      <img src="kenok-logo.jpeg" alt="Kenok Laundrette Logo" class="login-logo">
+      <h2>Kenok Laundrette</h2>
+      <p class="subtitle">Staff Sign Up</p>
+
+      <input type="text" id="signupName" placeholder="Full Name">
+      <input type="email" id="signupEmail" placeholder="Email">
+      <input type="password" id="signupPassword" placeholder="Password (min 6 characters)">
+      <button id="signupBtn">Sign Up</button>
+      <p id="signupError" class="login-error"></p>
+      <p id="signupSuccess" class="signup-success"></p>
+      <p class="switch-link">Already have an account? <a href="#" id="showLogin">Log in</a></p>
+    </div>
+
+    <div class="login-box" id="pendingBox" style="display: none;">
+      <img src="kenok-logo.jpeg" alt="Kenok Laundrette Logo" class="login-logo">
+      <h2>Kenok Laundrette</h2>
+      <p class="pending-message">⏳ Your account is pending approval from a director. Please check back soon.</p>
+      <button id="pendingLogoutBtn">Log Out</button>
+    </div>
+  </div>
+
+  <!-- Main app -->
+  <div class="app-shell" id="appContainer" style="display: none;">
+
+    <!-- ===== REGISTER TAB ===== -->
+    <div class="tab-view" id="tab-register">
+      <div class="container">
+        <div class="header">
+          <img src="kenok-logo.jpeg" alt="Kenok Laundrette Logo" class="logo">
+          <div>
+            <h1>Register</h1>
+            <p class="subtitle">Daily entries</p>
+          </div>
+        </div>
+
+        <div class="controls">
+          <input type="text" id="registerSearch" placeholder="🔍 Search by customer or item...">
+        </div>
+
+        <div id="registerList"></div>
+      </div>
+    </div>
+
+    <!-- ===== CUSTOMERS TAB ===== -->
+    <div class="tab-view" id="tab-customers" style="display: none;">
+      <div class="container">
+        <div class="header">
+          <img src="kenok-logo.jpeg" alt="Kenok Laundrette Logo" class="logo">
+          <div>
+            <h1>Customers</h1>
+            <p class="subtitle">Search & profiles</p>
+          </div>
+        </div>
+
+        <div class="controls">
+          <input type="text" id="customerSearch" placeholder="🔍 Search customers...">
+        </div>
+
+        <button id="newCustomerBtn" class="primary-btn">+ New Customer</button>
+
+        <div id="customerList" class="customer-list"></div>
+      </div>
+    </div>
+
+    <!-- ===== MESSAGES TAB ===== -->
+    <div class="tab-view" id="tab-messages" style="display: none;">
+      <div class="messages-wrap">
+        <div class="messages-header">
+          <img src="kenok-logo.jpeg" alt="Kenok Laundrette Logo" class="logo">
+          <div>
+            <h1>Team Chat</h1>
+            <p class="subtitle">All staff</p>
+          </div>
+        </div>
+
+        <div id="messagesList" class="messages-list"></div>
+
+        <form id="messageForm" class="message-form">
+          <input type="text" id="messageInput" placeholder="Type a message..." autocomplete="off" required>
+          <button type="submit">Send</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ===== ADMIN TAB (director only) ===== -->
+    <div class="tab-view" id="tab-admin" style="display: none;">
+      <div class="container">
+        <div class="header">
+          <img src="kenok-logo.jpeg" alt="Kenok Laundrette Logo" class="logo">
+          <div>
+            <h1>Admin</h1>
+            <p class="subtitle">Director tools</p>
+          </div>
+        </div>
+
+        <div class="admin-toggle">
+          <button class="admin-toggle-btn active" data-section="approvals">Approvals</button>
+          <button class="admin-toggle-btn" data-section="requests">Requests</button>
+          <button class="admin-toggle-btn" data-section="analysis">Analysis</button>
+        </div>
+
+        <div id="admin-approvals" class="admin-section">
+          <div id="pendingList"></div>
+        </div>
+        <div id="admin-requests" class="admin-section" style="display: none;">
+          <div id="deleteRequestsList"></div>
+        </div>
+        <div id="admin-analysis" class="admin-section" style="display: none;">
+
+          <div class="analysis-summary">
+            <div class="analysis-stat">
+              <span class="analysis-stat-label">Revenue</span>
+              <span class="analysis-stat-value revenue" id="totalRevenue">₦0</span>
+            </div>
+            <div class="analysis-stat">
+              <span class="analysis-stat-label">Expenses</span>
+              <span class="analysis-stat-value expense" id="totalExpenses">₦0</span>
+            </div>
+            <div class="analysis-stat">
+              <span class="analysis-stat-label">Profit</span>
+              <span class="analysis-stat-value profit" id="totalProfit">₦0</span>
+            </div>
+          </div>
+
+          <div class="chart-container">
+            <canvas id="profitChart"></canvas>
+          </div>
+
+          <button id="addExpenseBtn" class="primary-btn" style="margin-top: 18px;">+ Log Expense</button>
+
+          <div id="expenseList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== ME TAB ===== -->
+    <div class="tab-view" id="tab-me" style="display: none;">
+      <div class="container">
+        <div class="me-profile">
+          <div class="me-avatar" id="meAvatar"></div>
+          <h2 id="meName"></h2>
+          <p id="meEmail" class="subtitle"></p>
+        </div>
+        <button id="logoutBtn" class="me-logout-btn">Log Out</button>
+      </div>
+    </div>
+
+    <!-- Bottom navigation -->
+    <div class="bottom-nav" id="bottomNav">
+      <button class="nav-btn active" data-tab="register">
+        <span class="material-symbols-rounded">receipt_long</span>
+        <span class="nav-label">Register</span>
+      </button>
+      <button class="nav-btn" data-tab="customers">
+        <span class="material-symbols-rounded">group</span>
+        <span class="nav-label">Customers</span>
+      </button>
+      <button class="nav-btn" data-tab="messages">
+        <span class="material-symbols-rounded">chat_bubble</span>
+        <span class="nav-label">Messages</span>
+      </button>
+      <button class="nav-btn" data-tab="admin" id="adminNavBtn" style="display: none;">
+        <span class="material-symbols-rounded">admin_panel_settings</span>
+        <span class="nav-label">Admin</span>
+      </button>
+      <button class="nav-btn" data-tab="me">
+        <span class="material-symbols-rounded">account_circle</span>
+        <span class="nav-label">Me</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== FULL-SCREEN CUSTOMER PROFILE ===== -->
+  <div id="customerProfileView" class="profile-view" style="display: none;">
+    <div class="profile-header">
+      <button id="profileBackBtn" class="profile-back-btn">
+        <span class="material-symbols-rounded">arrow_back</span>
+      </button>
+      <div>
+        <h1 id="profileName"></h1>
+        <p class="subtitle" id="profilePhone"></p>
+      </div>
+      <button id="profileDeleteCustomerBtn" class="profile-delete-btn">
+        <span class="material-symbols-rounded">delete</span>
+      </button>
+    </div>
+
+    <div class="profile-body">
+      <button id="addOrderBtn" class="primary-btn">+ Add New Order</button>
+      <div id="orderHistoryList"></div>
+    </div>
+  </div>
+
+  <!-- New Customer modal -->
+  <div id="newCustomerModal" class="about-overlay" style="display: none;">
+    <div class="about-box">
+      <button id="closeNewCustomer" class="close-btn">&times;</button>
+      <h2>New Customer</h2>
+      <input type="text" id="newCustomerName" placeholder="Customer Name">
+      <input type="text" id="newCustomerPhone" placeholder="Phone Number (optional)">
+      <input type="email" id="newCustomerEmail" placeholder="Email (for notifications)">
+      <button id="saveNewCustomerBtn" class="primary-btn" style="margin-top: 12px;">Save Customer</button>
+    </div>
+  </div>
+
+  <!-- Add Order modal -->
+  <div id="addOrderModal" class="about-overlay" style="display: none;">
+    <div class="about-box">
+      <button id="closeAddOrder" class="close-btn">&times;</button>
+      <h2>Add New Order</h2>
+      <div id="orderItemsContainer"></div>
+      <button id="addItemRowBtn" class="secondary-btn">+ Add Item</button>
+      <div class="order-total-row">
+        <span>Total</span>
+        <strong id="orderTotalDisplay">₦0</strong>
+      </div>
+      <button id="saveOrderBtn" class="primary-btn" style="margin-top: 12px;">Save Order</button>
+    </div>
+  </div>
+
+  <!-- Add Expense modal -->
+  <div id="addExpenseModal" class="about-overlay" style="display: none;">
+    <div class="about-box">
+      <button id="closeAddExpense" class="close-btn">&times;</button>
+      <h2>Log Expense</h2>
+      <input type="text" id="expenseLabel" placeholder="What was it for? (e.g. Detergent)">
+      <input type="number" id="expenseAmount" placeholder="Amount ₦">
+      <button id="saveExpenseBtn" class="primary-btn" style="margin-top: 12px;">Save Expense</button>
+    </div>
+  </div>
+
+  <script src="firebase-config.js"></script>
+  <script src="auth.js"></script>
+  <script src="customers.js"></script>
+  <script src="register.js"></script>
+  <script src="chat.js"></script>
+  <script src="sw-register.js"></script>
+  <script src="analysis.js"></script>
+</body>
+</html>
