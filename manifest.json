@@ -1,0 +1,21 @@
+{
+  "name": "Kenok Laundrette",
+  "short_name": "Kenok",
+  "description": "Staff register and management app for Kenok Laundrette Services Limited",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#f4f5f7",
+  "theme_color": "#0B1F3F",
+  "icons": [
+    {
+      "src": "kenok-logo.jpeg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "kenok-logo.jpeg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}
